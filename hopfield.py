@@ -22,7 +22,15 @@ class Hopfield:
 
     def train(self, dataset):
         train_set = dataset.reshape(dataset.shape[0], -1)
-        self.weights = train_set.T @ train_set / self.number_of_bits
+        self.weights = (train_set.T @ train_set / self.number_of_bits).astype('float64')
+        if self.zero_self_interaction:
+            for i in range(self.number_of_bits):
+                self.weights[i, i] = 0.
+        if self.symmetric_weights:
+            for i in range(self.number_of_bits):
+                for j in range(i+1, self.number_of_bits):
+                    self.weights[j, i] = self.weights[i, j]
+
   
     def update(self, state=None, print_form=True):
         if state is None:
