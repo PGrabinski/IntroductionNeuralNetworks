@@ -19,16 +19,15 @@ class ContinuousHopifield(hopfield.Hopfield):
       ids = np.arange(self.number_of_bits)
       np.random.shuffle(ids)
       for i in ids:
-        temp = np.copy(new_state)
-        new_state[i] = self.activation_function(self.weights[i, :] @ new_state)
+        new_state[i] = self.activation_function(self.weights.T[i, :] @ new_state)
       self.memory_state = new_state
     return self.memory_state
   
   def loss(self, dataset):
     train_set = dataset.reshape(dataset.shape[0], -1)
     response = np.apply_along_axis(self.predict, 1, train_set)
-    return -0.5*((train_set+1-1e-31)*np.log(0.5*(response+1 +1e-31))
-                 + (-train_set+1-1e-31)*np.log(0.5*(-response+1 +1e-31))).sum()
+    return -0.5*((train_set+1)*np.log(0.5*(response+1 +1e-31))
+                 + (-train_set+1)*np.log(0.5*(-response+1 +1e-31))).sum()
   
   def train(self, dataset, epochs=None, learning_rate=0.1, tolerance=None, verbose=False):
     train_set = np.copy(dataset.reshape(dataset.shape[0], -1))
@@ -39,7 +38,7 @@ class ContinuousHopifield(hopfield.Hopfield):
       counter = 1
       while self.loss(train_set) > tolerance:
         weight_change = np.apply_along_axis(self.predict, 1, train_set)
-        weight_change = train_set + weight_change
+        weight_change = train_set - weight_change
         weight_change = -.5*train_set.T @ weight_change
         prev_loss = self.loss(train_set)
         if verbose:
@@ -51,7 +50,7 @@ class ContinuousHopifield(hopfield.Hopfield):
       # Trains for a given number of epochs
       for i in range(epochs):
         weight_change = np.apply_along_axis(self.predict, 1, train_set)
-        weight_change = (train_set + weight_change)
+        weight_change = train_set - weight_change
         weight_change = -0.5*train_set.T @ weight_change
         self.weights += -learning_rate * weight_change
         if verbose:
