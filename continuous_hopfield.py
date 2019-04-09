@@ -16,9 +16,7 @@ class ContinuousHopifield(hopfield.Hopfield):
       self.memory_state = self.activation_function(self.weights @ pattern)
     else:
       new_state = np.copy(pattern)
-      ids = np.arange(self.number_of_bits)
-      np.random.shuffle(ids)
-      for i in ids:
+      for i in range(self.number_of_bits):
         new_state[i] = self.activation_function(self.weights.T[i, :] @ new_state)
       self.memory_state = new_state
     return self.memory_state
@@ -40,11 +38,11 @@ class ContinuousHopifield(hopfield.Hopfield):
         weight_change = np.apply_along_axis(self.predict, 1, train_set)
         weight_change = train_set - weight_change
         weight_change = -.5*train_set.T @ weight_change
+        self.weights += -learning_rate * weight_change
         prev_loss = self.loss(train_set)
         if verbose:
           print(f'Epoch: {counter} Loss: {prev_loss}')
           counter += 1
-        self.weights += -learning_rate * weight_change
         
     elif tolerance is None and not epochs is None:
       # Trains for a given number of epochs
