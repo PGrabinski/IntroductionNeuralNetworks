@@ -3,8 +3,9 @@ import numpy as np
 Available loss functions with appropiate derivatives
 '''
 
-
 # Root mean square error loss function
+
+
 def rmse(self, samples, labels, derivative=False):
     '''
     Loss = sqrt(1/N sum( (samples - labels) ^ 2 ))
@@ -28,6 +29,8 @@ def rmse(self, samples, labels, derivative=False):
         return derivative
 
 # Mean square error loss function
+
+
 def mse(self, samples, labels, derivative=False):
     '''
     Loss = 1/N sum( (samples - labels) ^ 2 )
@@ -46,6 +49,8 @@ def mse(self, samples, labels, derivative=False):
         return derivative
 
 # Cross entropy loss function
+
+
 def cross_entropy(self, samples, labels, derivative=False):
     '''
     Loss = - sum( labels * log(samples) )
@@ -60,10 +65,12 @@ def cross_entropy(self, samples, labels, derivative=False):
         return loss.sum()
     # Derivative of the loss
     else:
-        derivative =  -labels * np.power(samples + 1e-8, -1)
+        derivative = -labels * np.power(samples + 1e-8, -1)
         return derivative
 
 # Chi-squared loss function
+
+
 def chi_squared(self, samples, labels, derivative=False, **kwargs):
     '''
     Loss = sum( (samples - labels)^2 / labels )
@@ -79,5 +86,5 @@ def chi_squared(self, samples, labels, derivative=False, **kwargs):
         return loss.sum()
     # Derivative of the loss
     else:
-        derivative =  2 * (self(samples) - labels) / deltas**2
+        derivative = 2 * (self(samples) - labels) / deltas**2
         return derivative

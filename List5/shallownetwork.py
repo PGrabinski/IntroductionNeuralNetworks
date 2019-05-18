@@ -2,6 +2,7 @@ import numpy as np
 from random import shuffle
 from utilities import sigmoid, linear
 from denselayer import Dense_Layer
+import optimizers
 import loss
 
 # ---------------------------------------------------------------------------------------------------------
@@ -86,87 +87,10 @@ class ShallowNetwork:
     # -----Learning methods-----------------------------------------------------------
     # --------------------------------------------------------------------------------
 
-    # Updating the parameters via simple gradient descent
-    def gradient_descent_step(self, X, Y, learning_rate, **kwargs):
-        '''
-        Performs a single epoch training on all samples and updates the weights of the network
-        according to the simple online gradient descent backpropagation. 
-        @params: 
-        1. X - numpy array, samples,
-        2. Y - numpy array, labels,
-        3. learning_rate - float, learning rate.
-        '''
-        def update_layer(self, further_signal, incoming_signal, learning_rate):
-            derivative = self.derivative(incoming_signal)
-            
-            delta_error = further_signal * derivative
-            weight_change = -learning_rate * delta_error.T @ incoming_signal
-            bias_change = -learning_rate * delta_error.T @ np.ones(shape=(incoming_signal.shape[0], 1))
-            self.update_parameters(weight_change, bias_change)
-            return delta_error @ self.weights        
-
-        responses = [X]
-        for layer in self.layers:
-            responses.append(layer(responses[-1]))
-
-        layers_to_train = [self.layers[len(self.layers) - i - 1]
-                           for i in range(len(self.layers))]
-
-        previous_delta = self.loss(X, Y, derivative=True, **kwargs)
-
-        for id, layer in enumerate(layers_to_train):
-            previous_delta = update_layer(layer,
-                previous_delta, responses[len(responses) - id - 2], learning_rate)
-
-    # Updating the parameters via Adagrad
-    def adagrad_step(self, X, Y, learning_rate, **kwargs):
-        '''
-        Performs a single epoch training on all samples and updates the weights of the network
-        according to the simple online gradient descent backpropagation. 
-        @params: 
-        1. X - numpy array, samples,
-        2. Y - numpy array, labels,
-        3. learning_rate - float, learning rate.
-        '''
-        def update_layer(self, further_signal, incoming_signal, learning_rate,
-            weight_factor, bias_factor):
-            derivative = self.derivative(incoming_signal)
-            
-            delta_error = further_signal * derivative
-            weight_gradient = delta_error.T @ incoming_signal
-            weight_mod = np.power(weight_factor + 1e-8, -0.5)
-            weight_change = -learning_rate * weight_gradient * weight_mod
-        
-
-            bias_gradient = delta_error.T @ np.ones(shape=(incoming_signal.shape[0], 1))
-            bias_mod = np.power(bias_factor + 1e-8, -0.5)
-            bias_change = -learning_rate * bias_gradient * bias_mod
-            
-            self.update_parameters(weight_change, bias_change)
-            return delta_error @ self.weights, weight_gradient, bias_gradient     
-
-        responses = [X]
-        for layer in self.layers:
-            responses.append(layer(responses[-1]))
-
-        layers_to_train = [self.layers[len(self.layers) - i - 1]
-                           for i in range(len(self.layers))]
-
-        previous_delta = self.loss(X, Y, derivative=True, **kwargs)
-
-        for id, layer in enumerate(layers_to_train):
-            previous_delta, weight_gradient, bias_gradient = update_layer(layer,
-                previous_delta, responses[len(responses) - id - 2], learning_rate,
-                weight_factor=self.weight_gradients[len(self.weight_gradients) - id - 1],
-                bias_factor=self.bias_gradients[len(self.bias_gradients) - id - 1])
-            self.weight_gradients[len(self.weight_gradients) - id - 1] += weight_gradient ** 2
-            self.bias_gradients[len(self.bias_gradients) - id - 1] += bias_gradient ** 2
-            
-
     # --------------------------------------------------------------------------------
     # Multiple epoch training
     def fit(self, X, Y, epochs, batch_size, learning_rate, verbose=True,
-        message_frequency=1, **kwargs):
+            message_frequency=1, **kwargs):
         '''
         Performs the given number of training epochs and prints the current loss function. 
         @params: 
@@ -196,18 +120,20 @@ class ShallowNetwork:
                 batched_counter = 0
                 while batched_counter < X.shape[0]:
                     if batched_counter + batch_size <= X.shape[0]:
-                        self.training_step(X=X[batched_counter:batched_counter+batch_size, :],
-                                           Y=Y[batched_counter:batched_counter+batch_size, :],
-                                           learning_rate=learning_rate, **kwargs)
+                        self.optimizer.train(network=self, X=X[batched_counter:batched_counter+batch_size, :],
+                                             Y=Y[batched_counter:batched_counter +
+                                                 batch_size, :],
+                                             learning_rate=learning_rate, **kwargs)
                     else:
-                        self.training_step(X=X[batched_counter:, :],
-                                           Y=Y[batched_counter:, :],
-                                           learning_rate=learning_rate, **kwargs)
+                        self.optimizer.train(network=self, X=X[batched_counter:, :],
+                                             Y=Y[batched_counter:, :],
+                                             learning_rate=learning_rate, **kwargs)
                     batched_counter += batch_size
                 if verbose and epoch % message_frequency == 0:
                     print(
                         f'Epoch: {epoch+1} Loss function: {self.loss(samples=X, labels=Y, **kwargs)}')
-            print(f'Final loss function: {self.loss(samples=X, labels=Y, **kwargs)}')
+            print(
+                f'Final loss function: {self.loss(samples=X, labels=Y, **kwargs)}')
         else:
             raise Exception(f'Parameter epochs has to be a positive integer.')
 
@@ -231,14 +157,9 @@ class ShallowNetwork:
             raise Exception(
                 'Only RMSE, MSE, Chi-squared, and Crossentropy are supported as loss functions.')
         if optimizer == 'GD':
-            self.training_step = self.gradient_descent_step
+            self.optimizer = optimizers.GradientDescent()
         elif optimizer == 'Adagrad':
-            self.training_step = self.adagrad_step
-            self.weight_gradients = []
-            self.bias_gradients = []
-            for layer in self.layers:
-                self.weight_gradients.append(np.ones(shape=layer.weights.shape, dtype='float64'))
-                self.bias_gradients.append(np.ones(shape=layer.bias.shape, dtype='float64'))
+            self.optimizer = optimizers.Adagrad(self.layers)
         else:
             raise Exception(
                 'Only SGD and Adagrad are accepted as the optimizers.')

@@ -88,7 +88,7 @@ class Dense_Layer:
         '''
         # print('Got', x.shape[1],'assumed', self.input_dim)
         if isinstance(x, np.ndarray) and len(x.shape) == 1 and self.input_dim == 1:
-            x = x.reshape(-1,1)
+            x = x.reshape(-1, 1)
         elif isinstance(x, np.ndarray) and len(x.shape) > 1 and x.shape[1] == self.input_dim:
             return x @ self.weights.T + self.bias.T
         else:
