@@ -82,7 +82,7 @@ def chi_squared(self, samples, labels, derivative=False, **kwargs):
     deltas = kwargs['DY']
     # Regular loss
     if not derivative:
-        loss = (self(samples) - labels / deltas) ** 2
+        loss = ((self(samples) - labels) / deltas) ** 2
         return loss.sum()
     # Derivative of the loss
     else:
